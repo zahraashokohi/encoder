@@ -55,6 +55,9 @@ uint8_t pinState = 0;
 uint32_t counterValue_A = 0;
 uint32_t counterValue_B = 0;
 int32_t counterValue_C = 0;
+int8_t direction = 0;
+int32_t  degree = 0;
+uint32_t timerCnt8 = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -114,20 +117,26 @@ int main(void)
   MX_CAN1_Init();
   MX_TIM6_Init();
   MX_TIM7_Init();
+  MX_TIM9_Init();
   /* USER CODE BEGIN 2 */
   HAL_TIM_Encoder_Start(&htim8, TIM_CHANNEL_ALL);
+
+  HAL_TIM_Base_Start_IT(&htim9);
+
+  counterValue_A = 0;
+  TIM8->CNT = 0;
+  counterValue_A = TIM8->CNT;
+  timerCnt8 = TIM8->CNT;
+  uint32_t halfCnt = 65536/ 2 - 1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  if(counterValue_B != TIM8->CNT)
-	  {
-		  counterValue_B = TIM8->CNT;
-		  counterValue_C = counterValue_B - counterValue_A;
 
-	  }
+		 degree = ((TIM8->CNT - counterValue_A)*0.1125)/2;
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -189,9 +198,42 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+uint32_t counterTimer = 0;
+uint8_t flag = 0;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
+	if(htim->Instance == TIM9)
+	{
+		if(flag)
+		{
+			flag = 0;
+			if(counterValue_B > TIM8->CNT)
+			{
+				direction = -1;
+			}
+			else
+			{
+				direction = 1;
+			}
 
+			counterValue_B = TIM8->CNT;
+		}
+		if(TIM8->CNT == timerCnt8)
+		{
+			counterTimer++;
+		}
+		else
+		{
+			counterTimer = 0;
+		}
+		if(counterTimer >= 50)
+		{
+			counterTimer = 0;
+			flag = 1;
+		}
+
+		timerCnt8 = TIM8->CNT  ;
+	}
 }
 
 void HAL_GPIO_EXTI_Callback(uint16_t pin) {
@@ -200,8 +242,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t pin) {
 		case AZ_HOME_Pin:
 			if(HAL_GPIO_ReadPin(AZ_HOME_GPIO_Port, AZ_HOME_Pin) == 0)
 			{
-				 TIM8->CNT = 0;
-				 counterValue_A = 0;
+
 			}
 			break;
 	}
