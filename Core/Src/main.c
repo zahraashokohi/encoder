@@ -135,7 +135,7 @@ int main(void)
   while (1)
   {
 
-		 degree = ((TIM8->CNT - counterValue_A)*0.1125)/2;
+		 degree = ((TIM8->CNT - counterValue_A)*0.0453);
 
     /* USER CODE END WHILE */
 
